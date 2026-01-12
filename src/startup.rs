@@ -6,7 +6,7 @@ use sqlx::{ PgPool };
 
 pub fn run(listener: TcpListener, db_pool: PgPool) -> Result<Server, std::io::Error> {
     // let connection = web::Data::new(connection);
-    let db_pool = web::Data::new(db_pool)
+    let db_pool = web::Data::new(db_pool);
     let server = HttpServer::new(move || {
         App::new()
             .route("/health_check", web::get().to(health_check))

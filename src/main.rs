@@ -12,5 +12,5 @@ pub async fn main() -> Result<(), std::io::Error> {
         .expect("Failed to connect to Postgres.");
     let address = format!("127.0.0.1:{}", configuration.application_port);
     let listener = TcpListener::bind(address)?;
-    run(listener, connection)?.await
+    run(listener, connection_pool)?.await
 }
