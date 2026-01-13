@@ -1,8 +1,8 @@
+use sqlx::{Connection, Executor, PgConnection, PgPool};
 use std::net::TcpListener;
-use sqlx::{ Connection, Executor, PgConnection, PgPool };
 
 use uuid::Uuid;
-use zero2prod::configuration::{ get_configuration, DatabaseSettings };
+use zero2prod::configuration::{DatabaseSettings, get_configuration};
 use zero2prod::startup::run;
 
 pub struct TestApp {
@@ -26,8 +26,7 @@ async fn test_health_check() {
 }
 
 async fn spawn_app() -> TestApp {
-    let listener = TcpListener::bind("127.0.0.1:0")
-        .expect("Failed to bind random port.");
+    let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port.");
     let port = listener.local_addr().unwrap().port();
     let address = format!("http://127.0.0.1:{}", port);
 
@@ -35,8 +34,7 @@ async fn spawn_app() -> TestApp {
     configuration.database.database_name = Uuid::new_v4().to_string();
     let connection_pool = configure_database(&configuration.database).await;
 
-    let server = run(listener, connection_pool.clone())
-        .expect("Failed to bind address.");
+    let server = run(listener, connection_pool.clone()).expect("Failed to bind address.");
 
     let _ = tokio::spawn(server);
     TestApp {
@@ -50,12 +48,10 @@ pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
         database_name: "postgres".to_string(),
         username: "postgres".to_string(),
         password: "password".to_string(),
-        .. config.clone()
+        ..config.clone()
     };
 
-    let mut connection = PgConnection::connect(
-            &maintenance_settings.connection_string()
-        )
+    let mut connection = PgConnection::connect(&maintenance_settings.connection_string())
         .await
         .expect("Failed to connect to Postgres");
     connection
@@ -76,19 +72,12 @@ pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
 
 #[tokio::test]
 async fn subscribe_valid_response() {
-    let app = spawn_app();
-    let configuration = get_configuration().expect("Failed to read configuration");
-    let connection_string = configuration.database.connection_string();
-
-    let connection_pool = PgPool::connect(&connection_string)
-        .await
-        .expect("Failed to connect to Postgres.");
-
+    let app = spawn_app().await;
     let client = reqwest::Client::new();
 
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
     let response = client
-        .post(&format!("{}/subscriptions", app.await.address))
+        .post(&format!("{}/subscriptions", app.address))
         .header("Content-Type", "application/x-www-form-urlencoded")
         .body(body)
         .send()
@@ -98,9 +87,9 @@ async fn subscribe_valid_response() {
     assert_eq!(200, response.status().as_u16());
 
     let saved = sqlx::query!("SELECT email, name FROM subscriptions",)
-        .fetch_one(&connection_pool)
+        .fetch_one(&app.db_pool)
         .await
-        .expect("Failed to fetch saved subscription.");
+        .expect("Failed to fetch saved subscription");
 
     assert_eq!(saved.email, "ursula_le_guin@gmail.com");
     assert_eq!(saved.name, "le guin");
