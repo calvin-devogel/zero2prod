@@ -1,31 +1,44 @@
 use sqlx::{Connection, Executor, PgConnection, PgPool};
-use std::net::TcpListener;
-
+use std::{
+    net::TcpListener,
+    sync::LazyLock,
+};
 use uuid::Uuid;
-use zero2prod::configuration::{DatabaseSettings, get_configuration};
-use zero2prod::startup::run;
+use zero2prod::{
+    configuration::{DatabaseSettings, get_configuration},
+    startup::run,
+    telemetry::{get_subscriber, init_subscriber}
+};
+
+static TRACING: LazyLock<()> = LazyLock::new(|| {
+    let default_filter_level = "info".to_string();
+    let subscriber_name = "test".to_string();
+
+    if std::env::var("TEST_LOG").is_ok() {
+        let subscriber = get_subscriber(
+            subscriber_name,
+            default_filter_level,
+            std::io::stdout
+        );
+        init_subscriber(subscriber);
+    } else {
+        let subscriber = get_subscriber(
+            subscriber_name,
+            default_filter_level,
+            std::io::sink
+        );
+        init_subscriber(subscriber);
+    }
+});
 
 pub struct TestApp {
     pub address: String,
     pub db_pool: PgPool,
 }
 
-#[tokio::test]
-async fn test_health_check() {
-    let app = spawn_app();
-    let client = reqwest::Client::new();
-
-    let response = client
-        .get(&format!("{}/health_check", app.await.address))
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    assert!(response.status().is_success());
-    assert_eq!(Some(0), response.content_length());
-}
-
 async fn spawn_app() -> TestApp {
+    LazyLock::force(&TRACING);
+
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port.");
     let port = listener.local_addr().unwrap().port();
     let address = format!("http://127.0.0.1:{}", port);
@@ -41,6 +54,21 @@ async fn spawn_app() -> TestApp {
         address,
         db_pool: connection_pool,
     }
+}
+
+#[tokio::test]
+async fn test_health_check() {
+    let app = spawn_app();
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get(&format!("{}/health_check", app.await.address))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    assert!(response.status().is_success());
+    assert_eq!(Some(0), response.content_length());
 }
 
 pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
