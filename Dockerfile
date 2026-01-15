@@ -1,24 +1,34 @@
 # use latest stable rust
-FROM rust:1.92.0
-
-# change working directory to `app`
-# will be created by Docker if it doesn't already exist
+# build
+FROM lukemathwalker/cargo-chef:latest-rust-1.92.0 AS chef
 WORKDIR /app
-
-# install the required system deps for linking
 RUN apt update && apt install lld clang -y
 
-# copy all the files from our environment to the docker image
+FROM chef AS planner
 COPY . .
+# compute a lock-like file for our project
+RUN cargo chef prepare --recipe-path recipe.json
 
-# tell sqlx to look at offline queries
+FROM chef AS builder
+COPY --from=planner /app/recipe.json recipe.json
+# build our project dependencies, not the application!
+RUN cargo chef cook --release --recipe-path recipe.json
+# up to this point, if our dep tree hasn't changed, all
+# layers should be cached.
+COPY . .
 ENV SQLX_OFFLINE=true
+# build project
+RUN cargo build --release --bin zero2prod
 
-# build the binary! (with --release for speed)
-RUN cargo build --release
-
-# set environment
+FROM debian:bookworm-slim AS runtime
+WORKDIR /app
+RUN apt-get update -y \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    # clean up
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /app/target/release/zero2prod zero2prod
+COPY configuration configuration
 ENV APP_ENVIRONMENT=production
-
-# when docker run, launch the built binary
-ENTRYPOINT ["./target/release/zero2prod"]
+ENTRYPOINT ["./zero2prod"]

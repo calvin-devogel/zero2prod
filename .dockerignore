@@ -1,1 +1,7 @@
 README.md
+.env
+targets/
+tests/
+Dockerfile
+scripts/
+migrations/
