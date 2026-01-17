@@ -1,0 +1,20 @@
+name: zero2prod
+region: nyc
+services:
+  - name: zero2prod
+    dockerfile_path: Dockerfile
+    source_dir: .
+    github:
+      branch: main
+      deploy_on_push: true
+      repo: calvin-devogel/zero2prod
+    health_check:
+      # path to the health check endpoint
+      http_path: /health_check
+    http_port: 8000
+    # for production workloads, add at least 2,
+    # but let's keep the bill under control
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    routes:
+      - path: /

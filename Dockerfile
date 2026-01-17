@@ -1,9 +1,10 @@
 # use latest stable rust
 # build
-FROM lukemathwalker/cargo-chef:latest-rust-1.92.0 AS chef
+FROM lukemathwalker/cargo-chef:latest-rust-slim-trixie AS chef
 WORKDIR /app
-RUN apt update && apt install lld clang -y
 
+RUN rustup target add x86_64-unknown-linux-musl
+RUN apt update && apt install musl-tools musl-dev -y
 FROM chef AS planner
 COPY . .
 # compute a lock-like file for our project
@@ -18,17 +19,13 @@ RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 ENV SQLX_OFFLINE=true
 # build project
-RUN cargo build --release --bin zero2prod
+RUN cargo build --target=x86_64-unknown-linux-musl --release --bin zero2prod
 
-FROM debian:bookworm-slim AS runtime
+FROM alpine:latest AS runtime
 WORKDIR /app
-RUN apt-get update -y \
-    && apt-get install -y --no-install-recommends openssl ca-certificates \
-    # clean up
-    && apt-get autoremove -y \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /app/target/release/zero2prod zero2prod
+RUN apk update \
+    && apk add openssl ca-certificates
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/zero2prod ./
 COPY configuration configuration
 ENV APP_ENVIRONMENT=production
 ENTRYPOINT ["./zero2prod"]

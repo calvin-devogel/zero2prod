@@ -34,7 +34,7 @@ sqlx = { version = "0.8.6", default-features = false, features = [
 ] }
 tokio = { version = "1.49.0", features = ["macros","rt-multi-thread"]}
 uuid = { version = "1.19.0", features = ["v4", "serde"] }
-chrono = { version = "0.4.22", default-features = false, features = ["clock"] }
+chrono = { version = "0.4.43", default-features = false, features = ["clock"] }
 reqwest = { version = "0.13.1", default-features = false, features = [
     "json",
     "default-tls",
