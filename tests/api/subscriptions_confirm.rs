@@ -5,6 +5,20 @@ use wiremock::{
 };
 
 #[tokio::test]
+async fn confirmations_without_token_are_rejected_with_a_400() {
+    // arrange
+    let app = spawn_app().await;
+
+    // act
+    let response = reqwest::get(&format!("{}/subscriptions/confirm", app.address))
+        .await
+        .unwrap();
+
+    // assert
+    assert_eq!(response.status().as_u16(), 400);
+}
+
+#[tokio::test]
 async fn the_link_returned_by_subscribe_returns_a_200_if_called() {
     // arrange
     let app = spawn_app().await;
