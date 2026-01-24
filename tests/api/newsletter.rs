@@ -1,8 +1,7 @@
-use crate::helpers::{ ConfirmationLinks, TestApp, spawn_app };
+use crate::helpers::{ConfirmationLinks, TestApp, spawn_app};
 use wiremock::{
-    matchers::{ any, method, path },
-    Mock,
-    ResponseTemplate,
+    Mock, ResponseTemplate,
+    matchers::{any, method, path},
 };
 
 #[tokio::test]
@@ -77,7 +76,7 @@ async fn create_confirmed_subscriber(app: &TestApp) {
         .unwrap();
 }
 
-// #[tokio::test]
+#[tokio::test]
 async fn newsletters_are_delivered_to_confirmed_subscribers() {
     // arrange
     let app = spawn_app().await;
