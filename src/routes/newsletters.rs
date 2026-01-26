@@ -195,7 +195,7 @@ async fn validate_credentials(
     ));
 
     if let Some((stored_user_id, stored_password_hash)) =
-        get_stored_credentials(&credentials.username, &pool)
+        get_stored_credentials(&credentials.username, pool)
             .await
             .map_err(PublishError::UnexpectedError)?
     {
@@ -213,9 +213,7 @@ async fn validate_credentials(
     // only set to Some if we found stored credentials
     // so even if the default password ends up matching (somehow)
     // we never authenticate a non-existing user.
-    user_id.ok_or_else(||
-        PublishError::AuthError(anyhow::anyhow!("Unknown username."))
-    )
+    user_id.ok_or_else(|| PublishError::AuthError(anyhow::anyhow!("Unknown username.")))
 }
 
 #[tracing::instrument(name = "Get stored credentials", skip(username, pool))]

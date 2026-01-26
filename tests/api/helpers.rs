@@ -1,10 +1,6 @@
 use argon2::{
-    Algorithm,
-    Argon2, 
-    Params,
-    PasswordHasher,
+    Algorithm, Argon2, Params, PasswordHasher, Version,
     password_hash::{SaltString, rand_core::OsRng},
-    Version
 };
 use secrecy::SecretString;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
