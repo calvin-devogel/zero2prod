@@ -60,3 +60,7 @@ actix-session = { version = "0.11.0", features = ["redis-session-rustls"] }
 serde_json = "1"
 actix-files = "0.6.9"
 urlencoding = "2"
+htmlescape = "0.3"
+hmac = { version = "0.12", features = ["std"]}
+sha2 = "0.10"
+hex = "0.4"
