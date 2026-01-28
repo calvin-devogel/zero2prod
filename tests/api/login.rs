@@ -5,7 +5,7 @@ async fn an_error_flash_message_is_set_on_failure() {
     // arrange
     let app = spawn_app().await;
 
-    // act
+    // act 1: try to log in
     let login_body = serde_json::json!({
         "username": "random-username",
         "password": "random-password"
@@ -17,6 +17,11 @@ async fn an_error_flash_message_is_set_on_failure() {
     let flash_cookie = response.cookies().find(|c| c.name() == "_flash").unwrap();
     assert_eq!(flash_cookie.value(), "Authentication failed");
 
-    // let html_page = app.get_login_html().await;
-    // assert!(html_page.contains(r#"<p><i>Authentication failed</i></p>"#));
+    // act 2: follow the redirect
+    let html_page = app.get_login_html().await;
+    assert!(html_page.contains("<p><i>Authentication failed</i></p>"));
+
+    // act 3: reload the page
+    let html_page = app.get_login_html().await;
+    assert!(!html_page.contains(r#"Authentication failed"#));
 }

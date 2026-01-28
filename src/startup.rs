@@ -21,13 +21,11 @@ impl Application {
     pub async fn build(configuration: Settings) -> Result<Self, std::io::Error> {
         let connection_pool = get_connection_pool(&configuration.database);
 
-        // TODO: pull this out into its own function, query the _sqlx_migrations table
-        // and see if any of the migrations you're going to run are already in the table
-        // and skip them
-        match sqlx::migrate!().run(&connection_pool).await {
-            Ok(_) => println!("Migrations successful."),
-            Err(e) => eprintln!("WARN: Migration failed: {}", e),
-        };
+        // i guess this just works?
+        sqlx::migrate!("./migrations")
+            .run(&connection_pool)
+            .await
+            .expect("Failed to apply migrations.");
 
         let sender_email = configuration
             .email_client
