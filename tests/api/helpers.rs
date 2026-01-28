@@ -81,6 +81,16 @@ pub struct TestApp {
 }
 
 impl TestApp {
+    pub async fn get_admin_dashboard_html(&self) -> String {
+        self.api_client
+            .get(&format!("{}/admin/dashboard", &self.address))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+            .text()
+            .await
+            .unwrap()
+    }
     pub async fn get_login_html(&self) -> String {
         self.api_client
             .get(&format!("{}/login", &self.address))
@@ -186,7 +196,7 @@ pub async fn spawn_app() -> TestApp {
         db_pool: get_connection_pool(&configuration.database),
         email_server,
         test_user: TestUser::generate(),
-        api_client: client
+        api_client: client,
     };
     test_app.test_user.store(&test_app.db_pool).await;
     test_app
